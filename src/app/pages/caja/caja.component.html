@@ -1,0 +1,259 @@
+<div class="pagina">
+  <div class="pagina-cabecera no-imprimir">
+    <div>
+      <h1>Caja</h1>
+      <p>{{ dia() ? fechaLarga(dia()!.fecha) : 'Cargando…' }}@if (!esHoy()) { · <button type="button" class="enlace" (click)="irAHoy()">Volver a hoy</button> }</p>
+    </div>
+    <div class="selector-fecha">
+      <app-icono nombre="calendario" [tamano]="20" />
+      <input type="date" aria-label="Elegir otro día" [ngModel]="fecha() || dia()?.fecha" (ngModelChange)="cambiarFecha($event)" [max]="hoyIso()" />
+    </div>
+  </div>
+
+  <div class="segmento no-imprimir" role="tablist">
+    <button type="button" role="tab" [class.activo]="pestana() === 'resumen'" (click)="elegirPestana('resumen')"><app-icono nombre="caja" [tamano]="18" /> Cierre del día</button>
+    <button type="button" role="tab" [class.activo]="pestana() === 'ventas'" (click)="elegirPestana('ventas')"><app-icono nombre="ticket" [tamano]="18" /> Ventas</button>
+    <button type="button" role="tab" [class.activo]="pestana() === 'cierres'" (click)="elegirPestana('cierres')"><app-icono nombre="barras" [tamano]="18" /> Días cerrados</button>
+  </div>
+
+  <!-- ===================== CIERRE DEL DÍA ===================== -->
+  <!-- ===================== CIERRE DEL DÍA ===================== -->
+  @if (pestana() === 'resumen') {
+    @if (cargando() && !dia()) {
+      <div class="esqueleto" style="height:360px;margin-top:16px"></div>
+    } @else {
+      @if (dia(); as d) {
+        <div class="cierre">
+          <section class="cuadre tarjeta">
+            <header class="c-cab">
+              <h2>Así quedó el día</h2>
+              @if (d.cerrado) {
+                <span class="pastilla oro"><app-icono nombre="check" [tamano]="14" /> Cerrado a las {{ hora(d.cierre_hora) }}</span>
+              } @else {
+                <span class="pastilla crema">Abierto · se actualiza solo</span>
+              }
+            </header>
+
+            <h3 class="subt">Dinero que entró</h3>
+            <ul class="renglones">
+              <li class="r-gaveta">
+                <span class="r-ico"><app-icono nombre="monedas" [tamano]="30" /></span>
+                <span class="r-txt">
+                  <strong>Efectivo en gaveta</strong>
+                  <small>Ventas en efectivo {{ soles(d.ventas.efectivo) }}@if (d.cobros_deuda.efectivo > 0) { + deudas cobradas {{ soles(d.cobros_deuda.efectivo) }} }</small>
+                </span>
+                <span class="r-monto dinero">{{ soles(d.efectivo_en_gaveta) }}</span>
+              </li>
+              <!-- BLOQUE YAPE -->
+              <li>
+                <span class="r-ico yape"><app-icono nombre="celular" [tamano]="30" /></span>
+                <span class="r-txt">
+                  <strong>Yape</strong>
+                  <small>Ventas por Yape {{ soles(d.ventas.yape) }}@if (d.cobros_deuda.yape > 0) { + deudas cobradas {{ soles(d.cobros_deuda.yape) }} }</small>
+                </span>
+                <span class="r-monto dinero">{{ soles(d.ventas.yape + d.cobros_deuda.yape) }}</span>
+              </li>
+
+              <!-- BLOQUE PLIN -->
+              <li>
+                <span class="r-ico plin"><app-icono nombre="celular" [tamano]="30" /></span>
+                <span class="r-txt">
+                  <strong>Plin</strong>
+                  <small>Ventas por Plin {{ soles(d.ventas.plin) }}@if (d.cobros_deuda.plin > 0) { + deudas cobradas {{ soles(d.cobros_deuda.plin) }} }</small>
+                </span>
+                <span class="r-monto dinero">{{ soles(d.ventas.plin + d.cobros_deuda.plin) }}</span>
+              </li>
+              @if (d.ventas.tarjeta > 0) {
+                <li>
+                  <span class="r-ico oro"><app-icono nombre="tarjeta" [tamano]="30" /></span>
+                  <span class="r-txt"><strong>Tarjeta</strong></span>
+                  <span class="r-monto dinero">{{ soles(d.ventas.tarjeta) }}</span>
+                </li>
+              }
+            </ul>
+
+            <div class="recauda">
+              <div>
+                <span>Recaudación del día</span>
+                <small>Plata que realmente entró: ventas al contado + deudas cobradas</small>
+              </div>
+              <strong class="dinero">{{ soles(d.recaudacion) }}</strong>
+            </div>
+
+            <h3 class="subt">Lo que se vendió y lo que se fió</h3>
+            <ul class="renglones">
+              <li>
+                <span class="r-ico"><app-icono nombre="ticket" [tamano]="30" /></span>
+                <span class="r-txt">
+                  <strong>Total vendido del día</strong>
+                  <small>Al contado y al fiado · {{ d.num_ventas }} {{ d.num_ventas === 1 ? 'venta' : 'ventas' }}</small>
+                </span>
+                <span class="r-monto dinero">{{ soles(d.total_vendido) }}</span>
+              </li>
+              <li>
+                <span class="r-ico granate"><app-icono nombre="cuaderno" [tamano]="30" /></span>
+                <span class="r-txt"><strong>Fiado generado hoy</strong><small>Ventas fiadas de hoy: todavía no entró ese dinero</small></span>
+                <span class="r-monto dinero fiado">{{ soles(d.fiado_generado) }}</span>
+              </li>
+              <li>
+                <span class="r-ico verde"><app-icono nombre="check" [tamano]="30" /></span>
+                <span class="r-txt"><strong>Cobranza de deudas anteriores</strong><small>Abonos que recibiste hoy; ya están dentro de la recaudación</small></span>
+                <span class="r-monto dinero cobranza">{{ soles(d.cobranza_deudas) }}</span>
+              </li>
+            </ul>
+
+            <div class="acciones no-imprimir">
+              <button type="button" class="btn btn-primario btn-grande cerrar" [class.seguro]="confirmarCierre()" [disabled]="cerrando()" (click)="cerrarDia()">
+                @if (cerrando()) { <span class="carga"></span> Guardando… }
+                @else if (confirmarCierre()) { <app-icono nombre="alerta" [tamano]="24" /> Toca otra vez para volver a cerrar }
+                @else if (d.cerrado) { <app-icono nombre="check" [tamano]="24" /> Volver a cerrar y guardar }
+                @else { <app-icono nombre="check" [tamano]="24" /> Cerrar día y guardar reporte }
+              </button>
+              <div class="secundarias">
+                <a class="btn btn-suave" [href]="enlaceWhatsApp(d)" target="_blank" rel="noopener"><app-icono nombre="enviar" [tamano]="20" /> Enviar por WhatsApp</a>
+                <button type="button" class="btn btn-suave" (click)="imprimir()"><app-icono nombre="imprimir" [tamano]="20" /> Imprimir</button>
+              </div>
+              @if (d.cerrado && !confirmarCierre()) { <small class="nota">Si vendiste algo después de cerrar, vuelve a cerrar y se recalcula.</small> }
+            </div>
+          </section>
+
+          <aside class="lado">
+            <div class="mini deuda">
+              <span>Deuda total pendiente de clientes</span>
+              <strong class="dinero">{{ soles(d.deuda_total_pendiente.total) }}</strong>
+              <small>{{ d.deuda_total_pendiente.vecinos }} {{ d.deuda_total_pendiente.vecinos === 1 ? 'vecino te debe' : 'vecinos te deben' }}{{ esHoy() ? ' ahora mismo' : ' al terminar ese día' }}</small>
+            </div>
+
+            <div class="mini granate">
+              <span>Ganancia estimada</span>
+              <strong class="dinero">{{ soles(d.ganancia_estimada) }}</strong>
+              <small>Ventas menos lo que costó cada producto</small>
+            </div>
+
+            @if (d.producto_estrella; as est) {
+              <div class="mini oro">
+                <span class="estrella"><app-icono nombre="estrella" [tamano]="16" /> Lo que más dejó</span>
+                <strong class="nombre">{{ est.nombre }}</strong>
+                <small>{{ est.unidades }} {{ est.unidades === 1 ? 'unidad' : 'unidades' }} · ganancia {{ soles(est.ganancia) }}</small>
+              </div>
+            }
+
+            <div class="top tarjeta">
+              <h3>Los más vendidos</h3>
+              @if (d.top_productos.length === 0) {
+                <p class="sin">Aún no hay ventas este día.</p>
+              } @else {
+                <ol>
+                  @for (p of d.top_productos; track p.id_producto) {
+                    <li>
+                      <span class="t-fila"><strong>{{ p.nombre }}</strong><span class="dinero">{{ soles(p.ingresos) }}</span></span>
+                      <span class="t-barra"><i [style.width.%]="ancho(p.ingresos, maxTop())"></i></span>
+                      <small>{{ p.unidades }} {{ p.unidades === 1 ? 'unidad' : 'unidades' }}</small>
+                    </li>
+                  }
+                </ol>
+              }
+            </div>
+          </aside>
+        </div>
+    }
+  }
+  }
+  <!-- ===================== VENTAS ===================== -->
+  @if (pestana() === 'ventas') {
+    <div class="filtro-metodo no-imprimir">
+      <div class="segmento">
+        <button type="button" [class.activo]="filtroMetodo() === ''" (click)="filtroMetodo.set('')">Todas</button>
+        <button type="button" [class.activo]="filtroMetodo() === 'Efectivo'" (click)="filtroMetodo.set('Efectivo')">Efectivo</button>
+        <button type="button" [class.activo]="filtroMetodo() === 'Yape/Plin'" (click)="filtroMetodo.set('Yape/Plin')">Yape / Plin</button>
+        <button type="button" [class.activo]="filtroMetodo() === 'Fiado'" (click)="filtroMetodo.set('Fiado')">Fiado</button>
+        <button type="button" [class.activo]="filtroMetodo() === 'Tarjeta'" (click)="filtroMetodo.set('Tarjeta')">Tarjeta</button>
+      </div>
+    </div>
+    @if (ventas() === null) {
+      <div class="esqueleto" style="height:70px;margin-bottom:8px"></div><div class="esqueleto" style="height:70px"></div>
+    } @else if (ventasFiltradas().length === 0) {
+      <div class="vacio tarjeta"><app-icono nombre="ticket" [tamano]="40" /><strong>No hay ventas</strong><span>Cuando vendas, aparecerán aquí.</span></div>
+    } @else {
+      <ul class="ventas">
+        @for (v of ventasFiltradas(); track v.id_venta) {
+          <li>
+            <button type="button" class="venta" [class.anulada]="v.estado_venta === 'Anulada'" (click)="abrirVenta(v)">
+              <span class="v-hora num">{{ hora(v.fecha_hora) }}</span>
+              <span class="v-mid">
+                <strong>{{ v.cliente }}</strong>
+                <small>{{ v.unidades }} {{ v.unidades === 1 ? 'unidad' : 'unidades' }} · #{{ v.id_venta }}</small>
+              </span>
+              <span class="pastilla" [class.oro]="v.metodo_pago === 'Yape/Plin'" [class.granate]="v.metodo_pago === 'Fiado'" [class.crema]="v.metodo_pago === 'Efectivo' || v.metodo_pago === 'Tarjeta'">{{ v.metodo_pago }}</span>
+              <span class="v-monto dinero">{{ soles(v.monto_total) }}</span>
+              @if (v.estado_venta === 'Anulada') { <span class="pastilla rojo">Anulada</span> }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  <!-- ===================== DÍAS CERRADOS ===================== -->
+  @if (pestana() === 'cierres') {
+    @if (cierres() === null) {
+      <div class="esqueleto" style="height:240px;margin-top:16px"></div>
+    } @else if (cierres()!.length === 0) {
+      <div class="vacio tarjeta"><app-icono nombre="barras" [tamano]="40" /><strong>Aún no cerraste ningún día</strong><span>Al final del día toca «Cerrar día y guardar reporte» y aparecerá aquí.</span></div>
+    } @else {
+      <div class="grafico tarjeta" role="img" [attr.aria-label]="'Ventas de los últimos ' + grafico().length + ' días cerrados'">
+        <h3>Ventas de los últimos días cerrados</h3>
+        <div class="barras">
+          @for (c of grafico(); track c.fecha) {
+            <div class="barra-col">
+              <span class="b-val dinero">{{ soles(c.total_vendido) }}</span>
+              <div class="b-pilar"><i [style.height.%]="ancho(c.total_vendido, maxCierre())"></i></div>
+              <span class="b-dia">{{ fechaCorta(c.fecha) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+      <ul class="cierres">
+        @for (c of cierres(); track c.fecha) {
+          <li>
+            <button type="button" class="cierre-fila" (click)="verCierre(c)">
+              <span class="cf-dia"><strong>{{ fechaCorta(c.fecha) }}</strong><small>{{ c.num_ventas }} ventas</small></span>
+              <span class="cf-det"><small>Recaudó</small><strong class="dinero">{{ soles(c.recaudacion) }}</strong></span>
+              <span class="cf-det"><small>Fiado</small><strong class="dinero">{{ soles(c.ventas_fiado) }}</strong></span>
+              <span class="cf-tot"><small>Vendido</small><strong class="dinero">{{ soles(c.total_vendido) }}</strong></span>
+              <app-icono nombre="flechaD" [tamano]="20" />
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>
+
+<!-- Detalle de una venta -->
+@if (detalle(); as v) {
+  <app-modal [titulo]="'Venta #' + v.id_venta" [ancho]="520" (cerrar)="detalle.set(null)">
+    <p class="d-meta">{{ cuando(v.fecha_hora) }} · {{ v.metodo_pago }}@if (v.cliente) { · {{ v.cliente.nombre }} }
+      @if (v.estado_venta === 'Anulada') { <span class="pastilla rojo">Anulada</span> }</p>
+    <ul class="d-items">
+      @for (it of v.items; track it.id_producto) {
+        <li><span><strong>{{ it.nombre }}</strong><small>{{ it.cantidad }} × {{ soles(it.precio_unitario) }}</small></span><span class="dinero">{{ soles(it.subtotal) }}</span></li>
+      }
+    </ul>
+    <div class="d-total"><span>Total</span><strong class="dinero">{{ soles(v.monto_total) }}</strong></div>
+    @if (v.estado_venta !== 'Anulada') {
+      <div class="campo" style="margin-top:16px">
+        <label for="motivo">Si te equivocaste, puedes anularla <small>(motivo opcional)</small></label>
+        <input id="motivo" class="input" placeholder="Ej. se equivocó de producto" autocomplete="off" [ngModel]="motivo()" (ngModelChange)="motivo.set($event)" />
+      </div>
+    }
+    <div pie style="display:contents">
+      <button type="button" class="btn btn-suave" (click)="detalle.set(null)">Cerrar</button>
+      @if (v.estado_venta !== 'Anulada') {
+        <button type="button" class="btn btn-peligro" [disabled]="anulando()" (click)="anular()">
+          @if (anulando()) { <span class="carga"></span> } Anular venta
+        </button>
+      }
+    </div>
+  </app-modal>
+}

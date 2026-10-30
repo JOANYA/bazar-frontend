@@ -1,0 +1,247 @@
+<div class="pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1>Inventario</h1>
+      <p>Todo lo que hay en tu bazar. Los semáforos te avisan qué reponer.</p>
+    </div>
+    <button type="button" class="btn btn-primario" (click)="nuevo()"><app-icono nombre="mas" [tamano]="22" /> Nuevo producto</button>
+  </div>
+
+  @if (alertas(); as a) {
+    @if (a.rojos + a.amarillos > 0) {
+      <div class="aviso-stock">
+        <app-icono nombre="alerta" [tamano]="24" />
+        <div>
+          <strong>Hay que reponer {{ a.rojos + a.amarillos }} {{ a.rojos + a.amarillos === 1 ? 'producto' : 'productos' }}</strong>
+          <span>{{ a.rojos }} agotados · {{ a.amarillos }} por agotarse</span>
+        </div>
+        <button type="button" class="btn btn-chico btn-oro" (click)="elegirFiltro('rojo')">Ver agotados</button>
+      </div>
+    }
+  }
+
+  <div class="barra">
+    <div class="busqueda">
+      <app-icono nombre="buscar" [tamano]="22" />
+      <input type="search" placeholder="Buscar por nombre o código…" autocomplete="off" aria-label="Buscar producto" [ngModel]="q()" (ngModelChange)="onBuscar($event)" />
+    </div>
+    <div class="segmento" role="tablist" aria-label="Filtrar inventario">
+      @for (f of filtros; track f.id) {
+        <button type="button" role="tab" [class.activo]="filtro() === f.id" (click)="elegirFiltro(f.id)">{{ f.texto }}</button>
+      }
+    </div>
+  </div>
+
+  @if (cargando()) {
+    @for (n of [1, 2, 3, 4, 5, 6]; track n) { <div class="esqueleto" style="height:84px;margin-bottom:10px"></div> }
+  } @else if (items().length === 0) {
+    <div class="vacio tarjeta">
+      <app-icono nombre="inventario" [tamano]="44" />
+      <strong>{{ q() || filtro() !== 'todos' ? 'No hay productos con ese filtro' : 'Tu inventario está vacío' }}</strong>
+      <span>{{ q() || filtro() !== 'todos' ? 'Prueba con otra búsqueda o quita el filtro.' : 'Crea tu primer producto para empezar a vender.' }}</span>
+      @if (!q() && filtro() === 'todos') { <button type="button" class="btn btn-primario" (click)="nuevo()">Crear producto</button> }
+    </div>
+  } @else {
+    <ul class="lista">
+      @for (p of items(); track p.id_producto) {
+        <li class="prod" [class.inactivo]="p.estado === 'Inactivo'">
+          <app-avatar [nombre]="p.nombre" [imagen]="p.imagen_url" style="--av:56px;--av-r:16px" />
+          <div class="p-nom">
+            <strong>{{ p.nombre }}</strong>
+            <span class="num">{{ p.codigo_barras || 'Sin código de barras' }}</span>
+          </div>
+          <div class="p-precio">
+            <strong class="dinero">{{ soles(p.precio_venta) }}</strong>
+            @if (margenDe(p); as m) { <small>Ganas {{ m }}%</small> } @else { <small>Sin costo</small> }
+          </div>
+          <div class="p-stock">
+            @if (p.estado === 'Inactivo') {
+              <span class="pastilla crema">Desactivado</span>
+            } @else {
+              <app-stock-chip [nivel]="p.nivel_stock" [stock]="p.stock_actual" />
+              <div class="medidor" [attr.aria-label]="p.stock_actual + ' unidades, mínimo ' + p.stock_minimo"><i [class]="p.nivel_stock" [style.width.%]="barra(p)"></i></div>
+              <small>Mínimo {{ p.stock_minimo }}</small>
+            }
+          </div>
+          <div class="p-acc">
+            @if (p.estado === 'Inactivo') {
+              <button type="button" class="btn btn-chico btn-oro" (click)="reactivar(p)">Reactivar</button>
+            } @else {
+              <button type="button" class="btn-icono estrella" [class.fijo]="p.es_favorito" (click)="alternarFavorito(p)"
+                      [attr.aria-pressed]="p.es_favorito" [attr.aria-label]="p.es_favorito ? 'Quitar de fijados' : 'Fijar en el mostrador'" [title]="p.es_favorito ? 'Fijado en el mostrador' : 'Fijar en el mostrador'">
+                <app-icono nombre="estrella" [tamano]="22" />
+              </button>
+              <button type="button" class="btn btn-chico btn-suave" (click)="abrirAjuste(p)">Contar</button>
+              <button type="button" class="btn-icono" (click)="verMovimientos(p)" aria-label="Ver historial de stock" title="Historial"><app-icono nombre="reloj" [tamano]="22" /></button>
+              <button type="button" class="btn-icono" (click)="editar(p)" aria-label="Editar producto" title="Editar"><app-icono nombre="lapiz" [tamano]="22" /></button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+    @if (hayMas()) {
+      <div class="mas"><button type="button" class="btn btn-suave" [disabled]="cargandoMas()" (click)="cargar(false)">
+        @if (cargandoMas()) { <span class="carga"></span> } Ver más productos</button></div>
+    }
+  }
+</div>
+
+<!-- ============ Crear / editar producto ============ -->
+@if (formAbierto()) {
+  <app-modal [titulo]="editando() ? 'Editar producto' : 'Nuevo producto'" [ancho]="640" (cerrar)="cerrarForm()">
+    <p class="ayuda">Solo el nombre y el precio son obligatorios. Lo demás se puede completar después.</p>
+
+    <div class="campo">
+      <label for="p-nombre">Nombre</label>
+      <input id="p-nombre" class="input" placeholder="Ej. Aceite Primor 1 L" autocomplete="off" [ngModel]="fNombre()" (ngModelChange)="fNombre.set($event)" />
+    </div>
+
+    <div class="rejilla-2" style="margin-top:14px">
+      <div class="campo">
+        <label for="p-precio">Precio de venta (S/)</label>
+        <input id="p-precio" class="input dinero grande" inputmode="decimal" placeholder="0.00" autocomplete="off" [ngModel]="fPrecio()" (ngModelChange)="fPrecio.set($event)" />
+      </div>
+      <div class="campo">
+        <label for="p-costo">Costo (S/) <small>opcional</small></label>
+        <input id="p-costo" class="input dinero grande" inputmode="decimal" placeholder="0.00" autocomplete="off" [ngModel]="fCosto()" (ngModelChange)="fCosto.set($event)" />
+      </div>
+    </div>
+    @if (margen(); as m) {
+      <div class="ganancia" [class.mal]="m.ganancia <= 0">
+        {{ m.ganancia > 0 ? 'Ganas ' + soles(m.ganancia) + ' por unidad (' + m.porcentaje + '%)' : 'Estás vendiendo por debajo del costo' }}
+      </div>
+    }
+
+    <div class="rejilla-2" style="margin-top:14px">
+      <div class="campo">
+        <label for="p-stock">{{ editando() ? 'Stock actual' : 'Stock inicial' }}</label>
+        @if (editando()) {
+          <input id="p-stock" class="input" [value]="fStock()" disabled />
+          <small>Para cambiarlo usa «Contar» o ingresa mercadería.</small>
+        } @else {
+          <input id="p-stock" class="input" inputmode="numeric" placeholder="0" autocomplete="off" [ngModel]="fStock()" (ngModelChange)="fStock.set($event)" />
+        }
+      </div>
+      <div class="campo">
+        <label for="p-min">Avisarme cuando queden <small>(o menos)</small></label>
+        <input id="p-min" class="input" inputmode="numeric" autocomplete="off" [ngModel]="fMin()" (ngModelChange)="fMin.set($event)" />
+      </div>
+    </div>
+
+    <div class="rejilla-2" style="margin-top:14px">
+      <div class="campo">
+        <label for="p-unidad">Se vende por</label>
+        <input id="p-unidad" class="input" list="unidades" autocomplete="off" [ngModel]="fUnidad()" (ngModelChange)="fUnidad.set($event)" />
+        <datalist id="unidades">@for (u of unidades; track u) { <option [value]="u"></option> }</datalist>
+      </div>
+      <div class="campo">
+        <label for="p-cod">Código de barras <small>opcional</small></label>
+        <div class="con-boton">
+          <input id="p-cod" class="input num" inputmode="numeric" autocomplete="off" [ngModel]="fCodigo()" (ngModelChange)="fCodigo.set($event)" />
+          <button type="button" class="btn btn-oro btn-chico" (click)="escaner.set(true)" aria-label="Escanear código con la cámara"><app-icono nombre="escanear" [tamano]="20" /></button>
+        </div>
+      </div>
+    </div>
+
+    <label class="check" style="margin-top:16px">
+      <input type="checkbox" [ngModel]="fFav()" (ngModelChange)="fFav.set($event)" />
+      <span class="caja-check"><app-icono nombre="check" [tamano]="16" /></span>
+      <span><strong>Fijar en el mostrador</strong><small>Aparecerá siempre en «Los de siempre», aunque no sea de los más vendidos.</small></span>
+    </label>
+
+    <details class="mas-opc">
+      <summary>Foto del producto (opcional)</summary>
+      <div class="campo" style="margin-top:16px">
+      <label for="p-archivo">Foto del producto (desde tu PC)</label>
+      <input id="p-archivo" type="file" accept="image/*" class="input" (change)="onSeleccionarArchivo($event)" />
+      @if (vistaPrevia()) {
+        <div style="margin-top:8px; display: flex; align-items: center; gap: 10px;">
+          <img [src]="vistaPrevia()" alt="Vista previa" style="max-height: 80px; border-radius: 8px; object-fit: cover;" />
+          <button type="button" class="btn btn-chico btn-suave" (click)="quitarImagenSeleccionada()">Quitar foto</button>
+        </div>
+      }
+      <small>Selecciona una imagen clara. Si no seleccionas ninguna, se mantendrá la imagen actual o la letra por defecto.</small>
+    </div>
+    </details>
+
+    @if (editando()) {
+      <section class="pres">
+        <h3>Presentaciones <small>(para ingresar mercadería por caja, docena…)</small></h3>
+        @if (presentaciones().length) {
+          <ul>
+            @for (pr of presentaciones(); track pr.id_presentacion) {
+              <li><span><strong>{{ pr.nombre }}</strong> · trae {{ pr.unidades }} unidades</span>
+                <button type="button" class="btn-icono" (click)="quitarPresentacion(pr)" [attr.aria-label]="'Quitar ' + pr.nombre"><app-icono nombre="basura" [tamano]="20" /></button></li>
+            }
+          </ul>
+        }
+        <div class="pres-nueva">
+          <input class="input" placeholder="Caja, docena…" [ngModel]="pNombre()" (ngModelChange)="pNombre.set($event)" aria-label="Nombre de la presentación" />
+          <input class="input" inputmode="numeric" placeholder="Unidades" [ngModel]="pUnidades()" (ngModelChange)="pUnidades.set($event)" aria-label="Unidades por presentación" />
+          <button type="button" class="btn btn-suave" (click)="agregarPresentacion()"><app-icono nombre="mas" [tamano]="20" /> Agregar</button>
+        </div>
+      </section>
+    }
+
+    @if (errorForm()) { <div class="error-caja" style="margin-top:14px" role="alert">{{ errorForm() }}</div> }
+
+    <div pie style="display:contents">
+      @if (editando()) {
+        <button type="button" class="btn btn-peligro btn-chico" style="margin-right:auto" (click)="desactivar()">
+          {{ confirmarDesactivar() ? '¿Seguro? Toca otra vez' : 'Desactivar' }}
+        </button>
+      }
+      <button type="button" class="btn btn-suave" (click)="cerrarForm()">Cancelar</button>
+      <button type="button" class="btn btn-primario" [disabled]="guardando()" (click)="guardar()">
+        @if (guardando()) { <span class="carga"></span> } {{ editando() ? 'Guardar cambios' : 'Crear producto' }}
+      </button>
+    </div>
+  </app-modal>
+}
+
+@if (escaner()) {
+  <app-escaner titulo="Código del producto" (leido)="alLeerCodigo($event)" (cerrar)="escaner.set(false)" />
+}
+
+<!-- ============ Contar (ajuste de stock) ============ -->
+@if (ajusteProd(); as p) {
+  <app-modal titulo="Contar producto" [ancho]="460" (cerrar)="ajusteProd.set(null)">
+    <p class="ajuste-prod"><strong>{{ p.nombre }}</strong><br />El sistema dice que hay <strong>{{ p.stock_actual }}</strong>. ¿Cuántos hay de verdad?</p>
+    <div class="contador">
+      <button type="button" (click)="pasoAjuste(-1)" aria-label="Una menos"><app-icono nombre="menos" [tamano]="28" /></button>
+      <input class="dinero" inputmode="numeric" autocomplete="off" [ngModel]="ajusteValor()" (ngModelChange)="ajusteValor.set($event)" (keydown.enter)="guardarAjuste()" aria-label="Unidades que hay" />
+      <button type="button" (click)="pasoAjuste(1)" aria-label="Una más"><app-icono nombre="mas" [tamano]="28" /></button>
+    </div>
+    <div class="motivos">
+      @for (m of motivosAjuste; track m) {
+        <button type="button" class="btn btn-suave btn-chico" [class.sel]="ajusteMotivo() === m" (click)="ajusteMotivo.set(ajusteMotivo() === m ? '' : m)">{{ m }}</button>
+      }
+    </div>
+    @if (errorAjuste()) { <div class="error-caja" style="margin-top:12px" role="alert">{{ errorAjuste() }}</div> }
+    <div pie style="display:contents">
+      <button type="button" class="btn btn-suave" (click)="ajusteProd.set(null)">Cancelar</button>
+      <button type="button" class="btn btn-primario" [disabled]="guardando()" (click)="guardarAjuste()">Guardar conteo</button>
+    </div>
+  </app-modal>
+}
+
+<!-- ============ Historial de stock ============ -->
+@if (movProd(); as p) {
+  <app-modal [titulo]="'Historial · ' + p.nombre" [ancho]="560" (cerrar)="movProd.set(null)">
+    @if (cargandoMovs()) {
+      <div class="esqueleto" style="height:56px;margin-bottom:8px"></div><div class="esqueleto" style="height:56px"></div>
+    } @else if (movs().length === 0) {
+      <p class="ayuda">Aún no hay movimientos.</p>
+    } @else {
+      <ul class="movs">
+        @for (m of movs(); track m.id_movimiento) {
+          <li>
+            <span class="m-cant dinero" [class.sale]="m.cantidad < 0">{{ m.cantidad > 0 ? '+' : '' }}{{ m.cantidad }}</span>
+            <span class="m-txt"><strong>{{ etiquetaMov(m.tipo) }}</strong><small>{{ cuando(m.fecha_hora) }}@if (m.motivo) { · {{ m.motivo }} }</small></span>
+            <span class="m-res">Quedó en <strong class="num">{{ m.stock_resultante }}</strong></span>
+          </li>
+        }
+      </ul>
+    }
+  </app-modal>
+}

@@ -1,0 +1,152 @@
+<div class="pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1>Mercadería</h1>
+      <p>Cuando llega el camión: busca, escribe cuánto trajo y cuánto costó. Listo.</p>
+    </div>
+  </div>
+
+  <div class="cuerpo">
+    <section class="principal">
+      <div class="campo">
+        <label for="prov">Proveedor <small>(opcional)</small></label>
+        <input id="prov" class="input" placeholder="Distribuidora, mayorista, nombre del vendedor…" autocomplete="off" [ngModel]="proveedor()" (ngModelChange)="proveedor.set($event)" />
+      </div>
+
+      <div class="agregar">
+        <div class="busqueda">
+          <app-icono nombre="buscar" [tamano]="22" />
+          <input type="search" placeholder="Busca el producto que llegó…" autocomplete="off" aria-label="Buscar producto para ingresar"
+                 [ngModel]="q()" (ngModelChange)="onBuscar($event)" (keydown.enter)="alEnter()" />
+          <button type="button" class="btn btn-oro btn-chico" (click)="escaner.set(true)"><app-icono nombre="escanear" [tamano]="20" /> Escanear</button>
+        </div>
+        @if (sugerencias() !== null) {
+          <ul class="sugerencias">
+            @for (p of sugerencias(); track p.id_producto) {
+              <li>
+                <button type="button" (click)="elegir(p)">
+                  <app-avatar [nombre]="p.nombre" [imagen]="p.imagen_url" style="--av:40px;--av-r:12px" />
+                  <span class="s-nom"><strong>{{ p.nombre }}</strong><small>Hay {{ p.stock_actual }} · cuesta {{ soles(p.precio_costo) }}</small></span>
+                  <app-icono nombre="mas" [tamano]="22" />
+                </button>
+              </li>
+            } @empty {
+              <li class="sin-res">No hay ese producto. Créalo primero en el inventario.</li>
+            }
+          </ul>
+        }
+      </div>
+
+      @if (lineas().length === 0) {
+        <div class="vacio tarjeta">
+          <app-icono nombre="camion" [tamano]="44" />
+          <strong>Aún no agregaste productos</strong>
+          <span>Busca por nombre o escanea el código de cada producto que llegó.</span>
+        </div>
+      } @else {
+        <ul class="lineas">
+          @for (l of lineas(); track l.producto.id_producto; let i = $index) {
+            @if (calcular(l); as c) {
+            <li class="linea">
+              <div class="l-cab">
+                <app-avatar [nombre]="l.producto.nombre" [imagen]="l.producto.imagen_url" style="--av:48px;--av-r:14px" />
+                <div class="l-nom">
+                  <strong>{{ l.producto.nombre }}</strong>
+                  <small>Hay {{ l.producto.stock_actual }} ahora</small>
+                </div>
+                <div class="l-total">
+                  <span class="dinero">{{ soles(c.total) }}</span>
+                  @if (c.unidades > 0) { <small>entran {{ c.unidades }} u.</small> }
+                </div>
+                <button type="button" class="btn-icono" (click)="quitar(i)" [attr.aria-label]="'Quitar ' + l.producto.nombre"><app-icono nombre="basura" [tamano]="22" /></button>
+              </div>
+
+              <div class="l-campos">
+                @if (l.presentaciones.length) {
+                  <div class="campo">
+                    <label [for]="'pres' + i">Llegó en</label>
+                    <select [id]="'pres' + i" class="input" [ngModel]="l.idPres" (ngModelChange)="cambiarPresentacion(i, +$event)">
+                      <option [ngValue]="0">Unidades sueltas</option>
+                      @for (p of l.presentaciones; track p.id_presentacion) { <option [ngValue]="p.id_presentacion">{{ p.nombre }} (×{{ p.unidades }})</option> }
+                    </select>
+                  </div>
+                }
+                <div class="campo">
+                  <label [for]="'cant' + i">Cantidad</label>
+                  <input [id]="'cant' + i" class="input grande dinero" inputmode="numeric" placeholder="0" autocomplete="off" [ngModel]="l.cantidad" (ngModelChange)="cambiar(i, 'cantidad', $event)" />
+                </div>
+                <div class="campo">
+                  <label [for]="'costo' + i">Costo {{ l.idPres ? 'por caja' : 'c/u' }} (S/)</label>
+                  <input [id]="'costo' + i" class="input grande dinero" inputmode="decimal" placeholder="0.00" autocomplete="off" [ngModel]="l.costo" (ngModelChange)="cambiar(i, 'costo', $event)" />
+                </div>
+                <div class="campo">
+                  <label [for]="'precio' + i">Precio de venta (S/)</label>
+                  <input [id]="'precio' + i" class="input grande dinero" inputmode="decimal" autocomplete="off" [ngModel]="l.precio" (ngModelChange)="cambiar(i, 'precio', $event)" />
+                </div>
+              </div>
+
+              @if (c.margen !== null) {
+                <div class="margen" [class.mal]="c.margen <= 0">
+                  Cada unidad te cuesta {{ soles(c.costoUnit) }} · {{ c.margen > 0 ? 'ganas ' + c.margen + '%' : 'vendes sin ganancia' }}
+                </div>
+              }
+            </li>
+            }
+          }
+        </ul>
+      }
+
+      @if (error()) { <div class="error-caja" role="alert">{{ error() }}</div> }
+    </section>
+
+    <aside class="lateral">
+      <div class="resumen tarjeta">
+        <span class="et">Total de la factura</span>
+        <strong class="dinero">{{ soles(resumen().total) }}</strong>
+        <span class="sub">{{ resumen().productos }} {{ resumen().productos === 1 ? 'producto' : 'productos' }} · {{ resumen().unidades }} unidades</span>
+        <button type="button" class="btn btn-primario btn-grande btn-bloque" [disabled]="guardando() || lineas().length === 0" (click)="guardar()">
+          @if (guardando()) { <span class="carga"></span> } @else { <app-icono nombre="check" [tamano]="24" /> } Guardar ingreso
+        </button>
+        @if (lineas().length) { <button type="button" class="btn btn-suave btn-bloque" (click)="limpiar()">Empezar de nuevo</button> }
+      </div>
+
+      <div class="hist tarjeta">
+        <h2>Últimos ingresos</h2>
+        @if (historial().length === 0) {
+          <p class="sin">Todavía no registraste mercadería.</p>
+        } @else {
+          <ul>
+            @for (c of historial(); track c.id_compra) {
+              <li>
+                <button type="button" (click)="verCompra(c)">
+                  <span class="h-txt"><strong>{{ c.proveedor || 'Sin proveedor' }}</strong><small>{{ cuando(c.fecha_hora) }} · {{ c.lineas }} {{ c.lineas === 1 ? 'producto' : 'productos' }}</small></span>
+                  <span class="dinero h-monto">{{ soles(c.total_costo) }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </aside>
+  </div>
+</div>
+
+@if (escaner()) {
+  <app-escaner titulo="Escanear mercadería" [ultimo]="lectura()?.texto ?? null" [ultimoMal]="lectura()?.mal ?? false" (leido)="alLeerCodigo($event)" (cerrar)="cerrarEscaner()" />
+}
+
+@if (detalle(); as d) {
+  <app-modal [titulo]="'Ingreso #' + d.id_compra" [ancho]="560" (cerrar)="detalle.set(null)">
+    <p class="d-meta">{{ d.proveedor || 'Sin proveedor' }} · {{ cuando(d.fecha_hora) }}</p>
+    <ul class="d-items">
+      @for (it of d.items; track $index) {
+        <li>
+          <span><strong>{{ it.nombre }}</strong><small>{{ it.cantidad_comprada }} {{ it.presentacion || 'u.' }} → {{ it.unidades_ingresadas }} unidades · {{ soles(it.costo_unitario) }} c/u</small></span>
+          <span class="dinero">{{ soles(it.costo_total) }}</span>
+        </li>
+      }
+    </ul>
+    <div class="d-total"><span>Total</span><strong class="dinero">{{ soles(d.total_costo) }}</strong></div>
+    <div pie style="display:contents"><button type="button" class="btn btn-primario" (click)="detalle.set(null)">Cerrar</button></div>
+  </app-modal>
+}

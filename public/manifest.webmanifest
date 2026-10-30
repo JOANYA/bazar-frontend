@@ -1,0 +1,14 @@
+{
+  "name": "Bazar Vecino",
+  "short_name": "Bazar",
+  "description": "Ventas, fiados, inventario y cierre de caja para el bazar de barrio",
+  "start_url": "/mostrador",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#faf3e3",
+  "theme_color": "#5a1020",
+  "lang": "es-PE",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

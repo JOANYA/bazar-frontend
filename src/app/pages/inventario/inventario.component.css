@@ -1,0 +1,76 @@
+:host{display:block}
+.aviso-stock{display:flex;align-items:center;gap:14px;padding:12px 16px;margin-bottom:16px;background:#fbebc2;color:#6b4300;border-radius:var(--r-lg);border:1px solid #efd48b}
+.aviso-stock div{display:flex;flex-direction:column;flex:1;line-height:1.25}
+.aviso-stock span{font-size:.9rem}
+.barra{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.busqueda{flex:1 1 320px;display:flex;align-items:center;gap:10px;padding:0 16px;min-height:56px;background:var(--crema-50);border:2px solid var(--linea-fuerte);border-radius:var(--r-lg);color:var(--granate-600)}
+.busqueda:focus-within{border-color:var(--granate-600);box-shadow:0 0 0 4px rgba(163,38,63,.14)}
+.busqueda input{flex:1;border:0;background:transparent;outline:none;font-size:1.1rem;min-height:50px;color:var(--tinta)}
+
+.lista{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.prod{display:grid;grid-template-columns:56px minmax(0,1.6fr) minmax(90px,.7fr) minmax(130px,.9fr) auto;align-items:center;gap:16px;
+  padding:10px 16px 10px 10px;background:var(--crema-50);border:1px solid var(--linea);border-radius:var(--r-lg);box-shadow:0 1px 0 var(--linea)}
+.prod.inactivo{opacity:.7}
+.p-nom{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.p-nom strong{font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-nom span{color:var(--tinta-3);font-size:.82rem}
+.p-precio{display:flex;flex-direction:column;line-height:1.2}
+.p-precio strong{font-size:1.3rem;color:var(--granate-700);font-weight:800}
+small{color:var(--tinta-3);font-size:.8rem}
+.p-stock{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.medidor{width:100%;max-width:150px;height:6px;border-radius:99px;background:var(--crema-300);overflow:hidden}
+.medidor i{display:block;height:100%;border-radius:99px}
+.medidor .verde{background:var(--ok)}.medidor .amarillo{background:var(--aviso)}.medidor .rojo{background:var(--peligro)}
+.p-acc{display:flex;align-items:center;gap:4px}
+.estrella{color:var(--tinta-3)}
+.estrella.fijo{color:var(--oro-500)}
+.estrella.fijo ::ng-deep svg{fill:var(--oro-400)}
+.mas{display:grid;place-items:center;margin-top:16px}
+
+.ayuda{margin:0 0 14px;color:var(--tinta-2)}
+.grande{font-size:1.4rem;font-weight:800;min-height:60px}
+.ganancia{margin-top:8px;padding:8px 14px;border-radius:var(--r-md);background:#e4eed9;color:#3c6128;font-weight:700;font-size:.92rem}
+.ganancia.mal{background:#f8d9d6;color:#9c231c}
+.con-boton{display:flex;gap:8px}
+.con-boton .btn{min-height:var(--toque);padding:0 14px}
+.check{display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.check input{position:absolute;opacity:0;width:1px;height:1px}
+.caja-check{width:28px;height:28px;border-radius:8px;border:2px solid var(--linea-fuerte);background:var(--crema-50);display:grid;place-items:center;color:transparent;flex-shrink:0;margin-top:1px}
+.check input:checked + .caja-check{background:var(--granate-700);border-color:var(--granate-700);color:var(--crema-50)}
+.check input:focus-visible + .caja-check{outline:3px solid var(--oro-500);outline-offset:2px}
+.check span:last-child{display:flex;flex-direction:column;line-height:1.3}
+.mas-opc{margin-top:14px;color:var(--tinta-2)}
+.mas-opc summary{cursor:pointer;font-weight:700;min-height:40px;display:flex;align-items:center}
+.pres{margin-top:20px;padding-top:16px;border-top:1px dashed var(--linea-fuerte)}
+.pres h3{margin:0 0 8px;font-size:1.1rem}
+.pres ul{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
+.pres li{display:flex;align-items:center;justify-content:space-between;background:var(--crema-100);padding:4px 6px 4px 14px;border-radius:var(--r-md)}
+.pres-nueva{display:grid;grid-template-columns:1fr 110px auto;gap:8px}
+
+.ajuste-prod{margin:0 0 16px;line-height:1.5}
+.contador{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px}
+.contador button{width:64px;height:64px;border-radius:50%;border:0;background:var(--oro-400);color:var(--granate-900);display:grid;place-items:center;box-shadow:0 3px 0 var(--oro-700)}
+.contador button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--oro-700)}
+.contador input{width:150px;text-align:center;font-size:3rem;font-weight:800;border:0;border-bottom:3px solid var(--granate-600);background:transparent;min-height:72px;color:var(--granate-800)}
+.contador input:focus{outline:none;background:var(--crema-100)}
+.motivos{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.motivos .sel{background:var(--granate-700);color:var(--crema-50);border-color:var(--granate-700)}
+
+.movs{list-style:none;margin:0;padding:0}
+.movs li{display:flex;align-items:center;gap:14px;padding:10px 4px;border-bottom:1px solid var(--linea)}
+.m-cant{min-width:56px;font-size:1.4rem;font-weight:800;color:#3c6128;text-align:center}
+.m-cant.sale{color:var(--granate-600)}
+.m-txt{display:flex;flex-direction:column;flex:1;line-height:1.25}
+.m-res{color:var(--tinta-2);font-size:.88rem;text-align:right}
+
+@media (max-width:899px){
+  .prod{grid-template-columns:56px minmax(0,1fr) auto;grid-template-areas:"av nom precio" "stock stock stock" "acc acc acc";gap:8px 12px;padding:12px}
+  .prod app-avatar{grid-area:av}
+  .p-nom{grid-area:nom}
+  .p-precio{grid-area:precio;text-align:right}
+  .p-stock{grid-area:stock;flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
+  .medidor{flex:1;min-width:80px;max-width:none}
+  .p-acc{grid-area:acc;justify-content:flex-end;border-top:1px dashed var(--linea-fuerte);padding-top:8px}
+  .pres-nueva{grid-template-columns:1fr 1fr}
+  .pres-nueva .btn{grid-column:1/-1}
+}

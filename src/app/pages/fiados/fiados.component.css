@@ -1,0 +1,86 @@
+:host{display:block}
+.resumen{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:18px}
+.r-card{border-radius:var(--r-lg);padding:14px 20px;display:flex;flex-direction:column;gap:2px}
+.r-card span{font-weight:700;font-size:.85rem;opacity:.85}
+.r-card strong{font-size:2.2rem;line-height:1.1}
+.r-card.granate{background:linear-gradient(150deg,var(--granate-600),var(--granate-800));color:var(--crema-50)}
+.r-card.crema{background:var(--crema-50);border:1px solid var(--linea)}
+.r-card.crema strong{color:var(--granate-800)}
+
+.cuerpo{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:20px;align-items:start}
+.herramientas{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.busqueda{display:flex;align-items:center;gap:10px;padding:0 16px;min-height:56px;background:var(--crema-50);border:2px solid var(--linea-fuerte);border-radius:var(--r-lg);color:var(--granate-600)}
+.busqueda:focus-within{border-color:var(--granate-600);box-shadow:0 0 0 4px rgba(163,38,63,.14)}
+.busqueda input{flex:1;border:0;background:transparent;outline:none;font-size:1.1rem;min-height:50px;color:var(--tinta)}
+.vecinos{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.vecino{width:100%;display:flex;align-items:center;gap:12px;padding:8px 14px 8px 8px;min-height:68px;text-align:left;background:var(--crema-50);border:2px solid var(--linea);border-radius:var(--r-lg)}
+.vecino:hover{border-color:var(--oro-500)}
+.vecino.sel{border-color:var(--granate-600);background:var(--granate-100)}
+.ini{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--oro-300);color:var(--granate-900);font-family:var(--f-display);font-weight:800;font-size:1.3rem;flex-shrink:0}
+.ini.grande{width:60px;height:60px;font-size:1.7rem}
+.nom{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.2}
+.nom strong{font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nom small{color:var(--tinta-3)}
+.saldo{font-size:1.3rem;font-weight:800}
+.saldo.debe{color:var(--granate-600)}
+
+.ficha{position:sticky;top:12px;background:var(--crema-50);border:1px solid var(--linea);border-radius:var(--r-xl);box-shadow:var(--sombra);padding:20px;min-height:360px;max-height:calc(100dvh - 24px);overflow-y:auto}
+.ficha-vacia{min-height:320px;display:grid;place-content:center;justify-items:center;gap:8px;text-align:center;color:var(--tinta-2)}
+.ficha-vacia strong{font-family:var(--f-display);font-size:1.4rem;color:var(--granate-800)}
+.f-cab{display:flex;align-items:center;gap:14px}
+.f-nom{flex:1;min-width:0}
+.f-nom h2{margin:0;font-size:1.6rem;overflow:hidden;text-overflow:ellipsis}
+.f-nom span{color:var(--tinta-2);font-size:.92rem}
+.volver{display:none}
+.f-saldo{margin:18px 0 14px;padding:16px 20px;border-radius:var(--r-lg);background:#e4eed9;color:#3c6128;display:flex;align-items:baseline;justify-content:space-between}
+.f-saldo span{font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:.82rem}
+.f-saldo strong{font-size:2.6rem;line-height:1}
+.f-saldo.debe{background:linear-gradient(150deg,var(--granate-600),var(--granate-800));color:var(--crema-50)}
+.f-saldo.debe span{color:var(--oro-300)}
+.f-acciones{display:flex;gap:10px;flex-wrap:wrap}
+.f-acciones .btn-grande{flex:1;min-width:160px}
+.f-hist-tit{margin:22px 0 8px;font-size:1.15rem}
+.sin-mov{color:var(--tinta-2)}
+.movs{list-style:none;margin:0;padding:0}
+.mov{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--linea)}
+.m-ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--granate-100);color:var(--granate-700);flex-shrink:0}
+.mov.pago .m-ico{background:#e4eed9;color:#3c6128}
+.m-txt,.m-monto{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.m-txt{flex:1}
+.m-monto{text-align:right}
+.m-monto strong{font-size:1.1rem;color:var(--granate-700)}
+.mov.pago .m-monto strong{color:#3c6128}
+small{color:var(--tinta-3);font-size:.8rem}
+.m-quien{margin:0 0 14px;font-size:1.05rem}
+.monto-input{font-size:2rem;font-weight:800;min-height:68px;text-align:center}
+.rapidos{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+@media (max-width:899px){
+  .resumen{grid-template-columns:1fr 1fr}
+  .r-card strong{font-size:1.6rem}
+  .cuerpo{grid-template-columns:minmax(0,1fr)}
+  .ficha{display:none}
+  .ficha.abierta{display:block;position:fixed;z-index:80;inset:0;max-height:none;border-radius:0;padding:max(14px,env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom))}
+  .volver{display:inline-grid}
+}
+/* --- Colores especiales para Yape y Plin --- */
+.segmento button.btn-yape {
+  background-color: #7b2cbf !important;
+  color: #ffffff !important;
+  border-color: #5a189a !important;
+}
+.segmento button.btn-yape.activo {
+  background-color: #5a189a !important;
+  box-shadow: 0 0 0 3px rgba(123, 44, 191, 0.3);
+}
+
+.segmento button.btn-plin {
+  background-color: #4cc9f0 !important;
+  color: #0b090a !important;
+  border-color: #22a3d2 !important;
+}
+.segmento button.btn-plin.activo {
+  background-color: #22a3d2 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.35);
+}

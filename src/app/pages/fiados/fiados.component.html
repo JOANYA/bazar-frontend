@@ -1,0 +1,190 @@
+<div class="pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1>Fiados</h1>
+      <p>El cuaderno de tus vecinos, sin papel ni borrones.</p>
+    </div>
+    <button type="button" class="btn btn-primario" (click)="nuevo()"><app-icono nombre="mas" [tamano]="22" /> Nuevo vecino</button>
+  </div>
+
+  <div class="resumen">
+    <div class="r-card granate">
+      <span>Te deben en total</span>
+      <strong class="dinero">{{ soles(totalDeuda()) }}</strong>
+    </div>
+    <div class="r-card crema">
+      <span>Vecinos con deuda</span>
+      <strong class="dinero">{{ conDeuda() }}</strong>
+    </div>
+  </div>
+
+  <div class="cuerpo" [class.con-ficha]="seleccion()">
+    <section class="lista-col">
+      <div class="herramientas">
+        <div class="busqueda">
+          <app-icono nombre="buscar" [tamano]="22" />
+          <input type="search" placeholder="Buscar vecino…" autocomplete="off" aria-label="Buscar vecino" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+        </div>
+        <div class="segmento" role="tablist">
+          <button type="button" [class.activo]="!soloDeuda()" (click)="soloDeuda.set(false)">Todos</button>
+          <button type="button" [class.activo]="soloDeuda()" (click)="soloDeuda.set(true)">Con deuda</button>
+        </div>
+      </div>
+
+      @if (cargando()) {
+        @for (n of [1, 2, 3, 4, 5]; track n) { <div class="esqueleto" style="height:72px;margin-bottom:10px"></div> }
+      } @else if (lista().length === 0) {
+        <div class="vacio tarjeta">
+          <app-icono nombre="cuaderno" [tamano]="40" />
+          <strong>{{ q() || soloDeuda() ? 'Nadie coincide' : 'Aún no hay vecinos anotados' }}</strong>
+          <span>{{ q() || soloDeuda() ? 'Prueba con otro nombre.' : 'Anota al primero aquí, o directamente al fiar en el mostrador.' }}</span>
+        </div>
+      } @else {
+        <ul class="vecinos">
+          @for (c of lista(); track c.id_cliente) {
+            <li>
+              <button type="button" class="vecino" [class.sel]="seleccion()?.id_cliente === c.id_cliente" (click)="abrir(c)">
+                <span class="ini">{{ c.nombre.charAt(0).toUpperCase() }}</span>
+                <span class="nom">
+                  <strong>{{ c.nombre }}</strong>
+                  @if (c.telefono) { <small class="num">{{ c.telefono }}</small> }
+                </span>
+                @if (c.saldo_deudor > 0) {
+                  <span class="saldo debe dinero">{{ soles(c.saldo_deudor) }}</span>
+                } @else if (c.saldo_deudor < 0) {
+                  <span class="pastilla oro">A favor {{ soles(-c.saldo_deudor) }}</span>
+                } @else {
+                  <span class="pastilla verde">Al día</span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- Ficha del vecino -->
+    <section class="ficha" [class.abierta]="seleccion()">
+      @if (seleccion(); as f) {
+        <header class="f-cab">
+          <button type="button" class="btn-icono volver" (click)="cerrarFicha()" aria-label="Volver a la lista"><app-icono nombre="flechaI" [tamano]="24" /></button>
+          <span class="ini grande">{{ f.nombre.charAt(0).toUpperCase() }}</span>
+          <div class="f-nom">
+            <h2>{{ f.nombre }}</h2>
+            <span>
+              @if (f.telefono) { {{ f.telefono }} } @else { Sin teléfono }
+              @if (f.limite_credito > 0) { · Límite {{ soles(f.limite_credito) }} }
+            </span>
+          </div>
+          <button type="button" class="btn-icono" (click)="editar(f)" aria-label="Editar datos"><app-icono nombre="lapiz" [tamano]="22" /></button>
+        </header>
+
+        <div class="f-saldo" [class.debe]="f.saldo_deudor > 0">
+          <span>{{ f.saldo_deudor > 0 ? 'Debe' : f.saldo_deudor < 0 ? 'Saldo a favor' : 'Está al día' }}</span>
+          <strong class="dinero">{{ soles(f.saldo_deudor < 0 ? -f.saldo_deudor : f.saldo_deudor) }}</strong>
+        </div>
+
+        <div class="f-acciones">
+          <button type="button" class="btn btn-oro btn-grande" [disabled]="f.saldo_deudor <= 0" (click)="abrirCobro()">
+            <app-icono nombre="monedas" [tamano]="24" /> Cobrar
+          </button>
+          @if (whatsapp(f); as wa) {
+            <a class="btn btn-suave" [href]="wa" target="_blank" rel="noopener"><app-icono nombre="enviar" [tamano]="20" /> Recordar por WhatsApp</a>
+          }
+        </div>
+
+        <h3 class="f-hist-tit">Historial</h3>
+        @if (cargandoFicha()) {
+          <div class="esqueleto" style="height:60px;margin-bottom:8px"></div><div class="esqueleto" style="height:60px"></div>
+        } @else if (f.movimientos.length === 0) {
+          <p class="sin-mov">Todavía no hay movimientos.</p>
+        } @else {
+          <ul class="movs">
+            @for (m of f.movimientos; track m.id_movimiento) {
+              <li class="mov" [class.pago]="m.tipo_movimiento === 'PAGO'">
+                <span class="m-ico"><app-icono [nombre]="m.tipo_movimiento === 'PAGO' ? 'check' : 'cuaderno'" [tamano]="18" /></span>
+                <span class="m-txt">
+                  <strong>{{ m.tipo_movimiento === 'PAGO' ? (m.metodo_pago ? 'Pagó con ' + m.metodo_pago : 'Ajuste') : 'Fiado' }}</strong>
+                  <small>{{ cuando(m.fecha_hora) }}@if (m.observacion) { · {{ m.observacion }} }</small>
+                </span>
+                <span class="m-monto">
+                  <strong class="dinero">{{ m.tipo_movimiento === 'PAGO' ? '−' : '+' }}{{ soles(m.monto) }}</strong>
+                  <small>Saldo {{ soles(m.saldo_nuevo) }}</small>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <div class="ficha-vacia">
+          <app-icono nombre="cuaderno" [tamano]="44" />
+          <strong>Elige un vecino</strong>
+          <span>Verás cuánto debe, su historial y podrás cobrarle.</span>
+        </div>
+      }
+    </section>
+  </div>
+</div>
+
+<!-- Cobrar -->
+@if (cobroAbierto()) {
+  <app-modal titulo="Cobrar deuda" [ancho]="480" (cerrar)="cobroAbierto.set(false)">
+    @if (seleccion(); as f) {
+      <p class="m-quien"><strong>{{ f.nombre }}</strong> debe <strong class="dinero">{{ soles(f.saldo_deudor) }}</strong></p>
+      <div class="campo">
+        <label for="monto">¿Cuánto paga?</label>
+        <input id="monto" class="input monto-input dinero" inputmode="decimal" autocomplete="off" [ngModel]="monto()" (ngModelChange)="monto.set($event)" (keydown.enter)="cobrar()" />
+      </div>
+      <div class="rapidos">
+        <button type="button" class="btn btn-suave btn-chico" (click)="ponerMonto(f.saldo_deudor)">Todo {{ soles(f.saldo_deudor) }}</button>
+        @if (f.saldo_deudor >= 4) { <button type="button" class="btn btn-suave btn-chico" (click)="ponerMonto(f.saldo_deudor / 2)">La mitad</button> }
+      </div>
+      <div class="campo" style="margin-top:14px">
+        <span class="etiqueta">Forma de pago</span>
+        <div class="segmento">
+          @for (m of metodos; track m) { 
+            <button type="button" 
+                    [class.activo]="metodo() === m" 
+                    [class.btn-yape]="m === 'Yape'"
+                    [class.btn-plin]="m === 'Plin'"
+                    (click)="metodo.set(m)">
+              {{ m }}
+            </button> 
+          }
+        </div>
+      </div>
+      @if (errorCobro()) { <div class="error-caja" style="margin-top:12px" role="alert">{{ errorCobro() }}</div> }
+    }
+    <div pie style="display:contents">
+      <button type="button" class="btn btn-suave" (click)="cobroAbierto.set(false)">Cancelar</button>
+      <button type="button" class="btn btn-primario btn-grande" [disabled]="enviando()" (click)="cobrar()">
+        @if (enviando()) { <span class="carga"></span> } Guardar cobro
+      </button>
+    </div>
+  </app-modal>
+}
+
+<!-- Alta / edición -->
+@if (formAbierto()) {
+  <app-modal [titulo]="editando() ? 'Datos del vecino' : 'Nuevo vecino'" [ancho]="480" (cerrar)="formAbierto.set(false)">
+    <div class="campo">
+      <label for="f-nombre">Nombre</label>
+      <input id="f-nombre" class="input" placeholder="Don Carlos, Doña Rosa…" autocomplete="off" [ngModel]="fNombre()" (ngModelChange)="fNombre.set($event)" />
+    </div>
+    <div class="campo" style="margin-top:14px">
+      <label for="f-tel">Celular <small>(opcional, sirve para recordarle por WhatsApp)</small></label>
+      <input id="f-tel" class="input" inputmode="tel" autocomplete="off" placeholder="987654321" [ngModel]="fTelefono()" (ngModelChange)="fTelefono.set($event)" />
+    </div>
+    <div class="campo" style="margin-top:14px">
+      <label for="f-lim">Límite de fiado <small>(opcional; vacío = sin límite)</small></label>
+      <input id="f-lim" class="input" inputmode="decimal" autocomplete="off" placeholder="Ej. 100" [ngModel]="fLimite()" (ngModelChange)="fLimite.set($event)" />
+    </div>
+    @if (errorForm()) { <div class="error-caja" style="margin-top:12px" role="alert">{{ errorForm() }}</div> }
+    <div pie style="display:contents">
+      <button type="button" class="btn btn-suave" (click)="formAbierto.set(false)">Cancelar</button>
+      <button type="button" class="btn btn-primario" [disabled]="enviando()" (click)="guardarForm()">
+        @if (enviando()) { <span class="carga"></span> } Guardar
+      </button>
+    </div>
+  </app-modal>
+}

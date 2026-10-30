@@ -1,0 +1,375 @@
+<div class="mostrador">
+  <!-- =============== Lado izquierdo: buscar y tocar =============== -->
+  <section class="izq">
+    <div class="busqueda">
+      <app-icono nombre="buscar" [tamano]="24" class="lupa" />
+      <input
+        type="search"
+        class="campo-busca"
+        placeholder="Busca por nombre: «coca», «arroz»…"
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+        aria-label="Buscar producto"
+        [ngModel]="q()"
+        (ngModelChange)="onBuscar($event)"
+        (keydown.enter)="alEnter()"
+      />
+      @if (q()) {
+        <button type="button" class="btn-icono" (click)="limpiarBusqueda()" aria-label="Borrar búsqueda">
+          <app-icono nombre="cerrar" [tamano]="22" />
+        </button>
+      }
+      @if (hayVoz) {
+        <button type="button" class="herr" [class.activa]="escuchando()" (click)="escuchar()" aria-label="Buscar hablando">
+          <app-icono nombre="microfono" [tamano]="24" />
+        </button>
+      }
+      <button type="button" class="herr oro" (click)="escaner.set(true)" aria-label="Escanear código de barras con la cámara">
+        <app-icono nombre="escanear" [tamano]="24" />
+        <span>Escanear</span>
+      </button>
+    </div>
+
+    <!-- Pulso del día -->
+    @if (inicio(); as i) {
+      <div class="pulso">
+        <a class="kpi granate" routerLink="/caja">
+          <span class="kpi-et">Vendido hoy</span>
+          <strong class="dinero">{{ soles(i.hoy.total_vendido) }}</strong>
+          <small>{{ i.hoy.num_ventas }} {{ i.hoy.num_ventas === 1 ? 'venta' : 'ventas' }}</small>
+        </a>
+        <a class="kpi oro" routerLink="/caja">
+          <span class="kpi-et">En la gaveta</span>
+          <strong class="dinero">{{ soles(i.hoy.efectivo_en_gaveta) }}</strong>
+          <small>efectivo</small>
+        </a>
+        <a class="kpi crema" routerLink="/inventario">
+          <span class="kpi-et">Por reponer</span>
+          <strong class="dinero" [class.alerta]="i.stock.agotados + i.stock.por_agotarse > 0">{{ i.stock.agotados + i.stock.por_agotarse }}</strong>
+          <small>{{ i.stock.agotados }} agotados</small>
+        </a>
+        <a class="kpi crema" routerLink="/fiados">
+          <span class="kpi-et">Te deben</span>
+          <strong class="dinero">{{ soles(i.fiados.total_por_cobrar) }}</strong>
+          <small>{{ i.fiados.vecinos_con_deuda }} {{ i.fiados.vecinos_con_deuda === 1 ? 'vecino' : 'vecinos' }}</small>
+        </a>
+      </div>
+    }
+
+    <!-- Resultados de búsqueda -->
+    @if (resultados() !== null) {
+      <div class="seccion-cab">
+        <h2>Resultados</h2>
+        <span class="cuenta" aria-live="polite">{{ resultados()!.length }} {{ resultados()!.length === 1 ? 'producto' : 'productos' }}</span>
+      </div>
+      @if (resultados()!.length === 0) {
+        <div class="vacio">
+          <strong>No encontré «{{ q() }}»</strong>
+          <span>Revisa cómo está escrito o créalo en el inventario.</span>
+          <a class="btn btn-suave btn-chico" routerLink="/inventario" [queryParams]="{ nuevo: 1 }">Crear producto</a>
+        </div>
+      } @else {
+        <ul class="resultados">
+          @for (p of resultados(); track p.id_producto) {
+            <li>
+              <button type="button" class="fila" [disabled]="p.stock_actual <= 0" (click)="agregar(p)">
+                <app-avatar [nombre]="p.nombre" [imagen]="p.imagen_url" style="--av:52px;--av-r:14px" />
+                <span class="datos">
+                  <strong>{{ p.nombre }}</strong>
+                  <span class="meta"><app-stock-chip [nivel]="p.nivel_stock" [stock]="p.stock_actual" /> @if (p.codigo_barras) { <span class="cod num">{{ p.codigo_barras }}</span> }</span>
+                </span>
+                <span class="precio dinero">{{ soles(p.precio_venta) }}</span>
+                <span class="mas"><app-icono nombre="mas" [tamano]="24" /></span>
+                @if (ticket.cantidadDe(p.id_producto) > 0) { <b class="cuenta-pastilla">{{ ticket.cantidadDe(p.id_producto) }}</b> }
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    } @else if (buscando()) {
+      <div class="vacio"><span class="carga"></span></div>
+    } @else {
+      <!-- Cuadrícula "Un toque" -->
+      <div class="seccion-cab">
+        <h2>{{ esRespaldo() ? 'Tus productos' : 'Los de siempre' }}</h2>
+        <span class="cuenta">{{ esRespaldo() ? 'Con la estrella (Inventario) fijas los que más vendes' : 'Toca para agregar' }}</span>
+      </div>
+
+      @if (cargando()) {
+        <div class="grilla">
+          @for (n of [1, 2, 3, 4, 5, 6, 7, 8]; track n) { <div class="esqueleto" style="height:168px"></div> }
+        </div>
+      } @else if (rapidos().length === 0) {
+        <div class="vacio tarjeta">
+          <app-icono nombre="inventario" [tamano]="40" />
+          <strong>Aún no hay productos para mostrar</strong>
+          <span>Crea tus productos en el inventario. Los que más vendas aparecerán aquí solos.</span>
+          <a class="btn btn-primario" routerLink="/inventario" [queryParams]="{ nuevo: 1 }">Crear mi primer producto</a>
+        </div>
+      } @else {
+        <div class="grilla">
+          @for (p of rapidos(); track p.id_producto) {
+            <button type="button" class="tile" [class.rebote]="rebote() === p.id_producto" (click)="agregar(p)"
+                    [attr.aria-label]="'Agregar ' + p.nombre + ', ' + soles(p.precio_venta)">
+              <app-avatar [nombre]="p.nombre" [imagen]="p.imagen_url" style="--av:100%;--av-r:14px" class="tile-foto" />
+              <span class="tile-nombre">{{ p.nombre }}</span>
+              <span class="tile-pie">
+                <span class="tile-precio dinero">{{ soles(p.precio_venta) }}</span>
+                @if (p.nivel_stock === 'amarillo') { <span class="tile-poco">Quedan {{ p.stock_actual }}</span> }
+              </span>
+              @if (p.origen === 'fijado') { <span class="tile-fijo" title="Fijado por ti"><app-icono nombre="estrella" [tamano]="14" /></span> }
+              @if (ticket.cantidadDe(p.id_producto) > 0) { <b class="cuenta-pastilla">{{ ticket.cantidadDe(p.id_producto) }}</b> }
+            </button>
+          }
+        </div>
+      }
+    }
+  </section>
+
+  <!-- =============== Lado derecho: el ticket =============== -->
+  <aside class="ticket" [class.abierto]="ticketAbierto()" aria-label="Ticket de venta">
+    <header class="t-cab">
+      <button type="button" class="t-cerrar btn-icono" (click)="ticketAbierto.set(false)" aria-label="Ocultar ticket">
+        <app-icono nombre="abajo" [tamano]="24" />
+      </button>
+      <h2>Ticket</h2>
+      @if (!ticket.vacio()) {
+        <span class="pastilla granate">{{ ticket.unidades() }} {{ ticket.unidades() === 1 ? 'unidad' : 'unidades' }}</span>
+        <button type="button" class="vaciar" [class.seguro]="confirmarVaciar()" (click)="vaciar()">
+          <app-icono nombre="basura" [tamano]="18" />
+          {{ confirmarVaciar() ? '¿Seguro? Toca otra vez' : 'Vaciar' }}
+        </button>
+      }
+    </header>
+
+    @if (confirmacion(); as c) {
+      <!-- Venta guardada -->
+      <div class="listo">
+        <div class="listo-ico"><app-icono nombre="check" [tamano]="38" /></div>
+        <h3>Venta guardada</h3>
+        <p class="listo-total dinero">{{ soles(c.total) }}</p>
+        <p class="listo-medio">
+          @if (c.metodo === 'Fiado') { Fiado a <strong>{{ c.vecino }}</strong> } @else { Pagó con <strong>{{ c.metodo }}</strong> }
+        </p>
+        @if (c.vuelto !== null && c.vuelto > 0) {
+          <div class="vuelto-grande">
+            <span>Vuelto</span>
+            <strong class="dinero">{{ soles(c.vuelto) }}</strong>
+          </div>
+        }
+        <div class="listo-botones">
+          <button type="button" class="btn btn-primario btn-grande btn-bloque" (click)="cerrarConfirmacion()">Siguiente venta</button>
+          <button type="button" class="btn btn-suave btn-bloque" (click)="deshacer()">
+            <app-icono nombre="deshacer" [tamano]="18" /> Deshacer esta venta
+          </button>
+        </div>
+      </div>
+    } @else if (ticket.vacio()) {
+      <!-- Estado vacío correcto -->
+      <div class="t-vacio">
+        <div class="t-vacio-ico"><app-icono nombre="mostrador" [tamano]="46" /></div>
+        <strong>El ticket está vacío</strong>
+        <span>Toca un producto, busca por nombre o escanea el código de barras.</span>
+      </div>
+    } @else {
+      <!-- Contenido del ticket cuando SÍ hay productos -->
+      <ul class="lineas">
+        @for (l of ticket.lineas(); track l.id_producto) {
+          <li class="linea" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 0; border-bottom: 1px dashed var(--borde, #e5e5e5);">
+            
+            <!-- Fila 1: Nombre, precio unitario y Subtotal -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div class="l-info">
+                <strong style="display: block; font-size: 0.95rem;">{{ l.nombre }}</strong>
+                <span class="num" style="font-size: 0.8rem; color: #666;">{{ soles(l.precio) }} c/u</span>
+              </div>
+              <span class="l-sub dinero" style="font-weight: 700; font-size: 1.05rem;">{{ soles(l.precio * l.cantidad) }}</span>
+            </div>
+
+            <!-- Fila 2: Controles de cantidad y Selector de Presentación -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div class="paso" role="group" [attr.aria-label]="'Cantidad de ' + l.nombre">
+                <button type="button" (click)="cambiarCantidad(l.id_producto, -1)">
+                  <app-icono [nombre]="l.cantidad === 1 ? 'basura' : 'menos'" [tamano]="18" />
+                </button>
+                <input type="text" inputmode="numeric" class="num" [value]="l.cantidad" (change)="escribirCantidad(l.id_producto, $any($event.target).value)" />
+                <button type="button" (click)="cambiarCantidad(l.id_producto, 1)">
+                  <app-icono nombre="mas" [tamano]="18" />
+                </button>
+              </div>
+
+              <!-- Selector desplegable (Caja / Unidad) -->
+              @if (l.presentaciones && l.presentaciones.length > 0) {
+                <select 
+                  style="padding: 4px 8px; border-radius: 8px; border: 1px solid var(--borde, #ccc); background: #fff; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--tinta, #333);"
+                  (change)="cambiarPresentacionLinea(l.id_producto, $any($event.target).value)"
+                >
+                  <option value="unidad">Unidad suelta</option>
+                  @for (pres of l.presentaciones; track pres.id_presentacion) {
+                    <option [value]="pres.id_presentacion">
+                      {{ pres.nombre }} ({{ pres.unidades }} un.)
+                    </option>
+                  }
+                </select>
+              }
+            </div>
+
+          </li>
+        }
+      </ul>
+
+      <footer class="cobro">
+        @if (errorVenta()) { <div class="error-caja" role="alert">{{ errorVenta() }}</div> }
+
+        <div class="total">
+          <span>Total</span>
+          <strong class="dinero">{{ soles(ticket.total()) }}</strong>
+        </div>
+
+        <div class="paga">
+          <span class="paga-et">¿Con cuánto paga?</span>
+          <div class="billetes">
+            <button type="button" [class.sel]="pagaCon() === ticket.total()" (click)="elegirBillete('exacto')">Exacto</button>
+            @for (b of billetes(); track b) {
+              <button type="button" [class.sel]="pagaCon() === b" (click)="elegirBillete(b)">S/ {{ b }}</button>
+            }
+          </div>
+          @if (vuelto() !== null) {
+            @if ((vuelto() ?? 0) >= 0) {
+              <div class="vuelto"><span>Vuelto</span><strong class="dinero">{{ soles(vuelto()) }}</strong></div>
+            } @else {
+              <div class="vuelto falta"><span>Falta</span><strong class="dinero">{{ soles(-(vuelto() ?? 0)) }}</strong></div>
+            }
+          }
+        </div>
+
+        <div class="pagos">
+          <button type="button" class="btn btn-primario btn-grande pago-efectivo" [disabled]="enviando()" (click)="cobrar('Efectivo')">
+            @if (enviando()) { <span class="carga"></span> } @else { <app-icono nombre="monedas" [tamano]="26" /> }
+            Efectivo
+          </button>
+          
+          <button type="button" class="btn btn-yape" [disabled]="enviando()" (click)="cobrar('Yape')">
+            <app-icono nombre="celular" [tamano]="22" /> Yape
+          </button>
+          
+          <button type="button" class="btn btn-plin" [disabled]="enviando()" (click)="cobrar('Plin')">
+            <app-icono nombre="celular" [tamano]="22" /> Plin
+          </button>
+
+          <button type="button" class="btn btn-borde" [disabled]="enviando()" (click)="abrirFiar()">
+            <app-icono nombre="cuaderno" [tamano]="22" /> Fiar
+          </button>
+          
+          <button type="button" class="btn btn-suave" [disabled]="enviando()" (click)="cobrar('Tarjeta')">
+            <app-icono nombre="tarjeta" [tamano]="22" /> Tarjeta
+          </button>
+        </div>
+      </footer>
+    }
+  </aside>
+
+  <!-- Barra del ticket en celular -->
+  @if ((!ticket.vacio() || confirmacion()) && !ticketAbierto()) {
+    <button type="button" class="barra-movil" (click)="ticketAbierto.set(true)">
+      <span class="bm-izq"><app-icono nombre="ticket" [tamano]="24" /> {{ confirmacion() ? 'Venta guardada' : ticket.unidades() + ' en el ticket' }}</span>
+      <span class="bm-der dinero">{{ confirmacion() ? 'Ver vuelto' : soles(ticket.total()) }}</span>
+    </button>
+  }
+</div>
+
+<!-- =============== Fiado Express =============== -->
+@if (fiarAbierto()) {
+  <app-modal titulo="¿A quién le fías?" [ancho]="560" (cerrar)="cerrarFiar()">
+    <div class="fiar-total">
+      <span>Se anotará</span>
+      <strong class="dinero">{{ soles(ticket.total()) }}</strong>
+    </div>
+
+    <div class="busqueda busca-vecino">
+      <app-icono nombre="buscar" [tamano]="22" class="lupa" />
+      <input type="search" class="campo-busca" placeholder="Escribe el nombre: «don car»…" autocomplete="off" autofocus
+             [ngModel]="fq()" (ngModelChange)="fq.set($event); elegido.set(null)" />
+    </div>
+
+    <ul class="vecinos">
+      @for (c of vecinosFiltrados(); track c.id_cliente) {
+        <li>
+          <button type="button" class="vecino" [class.sel]="elegido()?.id_cliente === c.id_cliente" (click)="elegido.set(c)">
+            <span class="v-ini">{{ c.nombre.charAt(0).toUpperCase() }}</span>
+            <span class="v-nom">{{ c.nombre }}</span>
+            @if (c.saldo_deudor > 0) { <span class="pastilla granate">Debe {{ soles(c.saldo_deudor) }}</span> } @else { <span class="pastilla crema">Al día</span> }
+          </button>
+        </li>
+      }
+      @if (puedeCrearVecino()) {
+        <li>
+          <button type="button" class="vecino nuevo" [disabled]="enviando()" (click)="fiarANuevo()">
+            <span class="v-ini"><app-icono nombre="mas" [tamano]="20" /></span>
+            <span class="v-nom">Anotar a «{{ fq().trim() }}» como vecino nuevo y fiarle</span>
+          </button>
+        </li>
+      }
+    </ul>
+    @if (clientes.cargados() && vecinosFiltrados().length === 0 && !puedeCrearVecino()) {
+      <p class="sin-vecinos">Escribe el nombre del vecino para anotarlo.</p>
+    }
+
+    @if (proyeccion(); as pr) {
+      <div class="proy" [class.mal]="pr.pasa">
+        @if (pr.pasa) {
+          <app-icono nombre="alerta" [tamano]="20" />
+          <span>Pasaría su límite de fiado de {{ soles(pr.limite) }}. Su deuda quedaría en {{ soles(pr.nueva) }}.</span>
+        } @else {
+          <span>Su deuda quedará en <strong class="dinero">{{ soles(pr.nueva) }}</strong></span>
+        }
+      </div>
+    }
+
+    @if (errorVenta()) { <div class="error-caja" role="alert">{{ errorVenta() }}</div> }
+
+    <div pie style="display:contents">
+      <button type="button" class="btn btn-suave" (click)="cerrarFiar()">Cancelar</button>
+      <button type="button" class="btn btn-primario btn-grande" [disabled]="!elegido() || proyeccion()?.pasa || enviando()" (click)="guardarFiado()">
+        @if (enviando()) { <span class="carga"></span> } Guardar fiado
+      </button>
+    </div>
+  </app-modal>
+}
+<!-- =============== Selector de Presentaciones (Unidad / Caja) =============== -->
+@if (productoConPresentacion(); as prod) {
+  <app-modal titulo="Elige la presentación" [ancho]="420" (cerrar)='productoConPresentacion.set(null)'>
+    <p style="text-align:center; font-size:1.1rem; margin-bottom:16px; color:var(--tinta);">
+      ¿Cómo vas a vender <strong>{{ prod.nombre }}</strong>?
+    </p>
+    <div style="display:grid; gap:10px;">
+      <!-- Opción por Unidad suelta -->
+      <button type="button" class="btn btn-suave btn-grande" style="justify-content:space-between;" (click)="elegirPresentacion(prod, 1, prod.precio_venta)">
+        <span style="font-weight:700;">Unidad suelta</span>
+        <strong class="dinero">{{ soles(prod.precio_venta) }}</strong>
+      </button>
+
+      <!-- Opciones por Caja u otras presentaciones configuradas -->
+      @for (pres of prod.presentaciones; track pres.id) {
+        <button type="button" class="btn btn-primario btn-grande" style="justify-content:space-between;" (click)="elegirPresentacion(prod, pres.cantidad_unidades, prod.precio_venta * pres.cantidad_unidades)">
+          <span style="font-weight:700;">{{ pres.nombre }} ({{ pres.cantidad_unidades }} un.)</span>
+          <strong class="dinero">{{ soles(prod.precio_venta * pres.cantidad_unidades) }}</strong>
+        </button>
+      }
+    </div>
+  </app-modal>
+}
+
+
+
+<!-- =============== Cámara =============== -->
+@if (escaner()) {
+  <app-escaner
+    titulo="Escanear productos"
+    [ultimo]="lecturaMsg()?.texto ?? null"
+    [ultimoMal]="lecturaMsg()?.mal ?? false"
+    (leido)="alLeerCamara($event)"
+    (cerrar)="cerrarEscaner()"
+  />
+}
