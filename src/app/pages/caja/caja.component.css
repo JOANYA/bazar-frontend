@@ -131,3 +131,10 @@ small{color:var(--tinta-3);font-size:.8rem}
   background-color: #4cc9f0 !important;
   color: #0b090a !important;
 }
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
