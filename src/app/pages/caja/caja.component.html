@@ -185,7 +185,12 @@
                 <strong>{{ v.cliente }}</strong>
                 <small>{{ v.unidades }} {{ v.unidades === 1 ? 'unidad' : 'unidades' }} · #{{ v.id_venta }}</small>
               </span>
-              <span class="pastilla" [class.oro]="v.metodo_pago === 'Yape/Plin'" [class.granate]="v.metodo_pago === 'Fiado'" [class.crema]="v.metodo_pago === 'Efectivo' || v.metodo_pago === 'Tarjeta'">{{ v.metodo_pago }}</span>
+               <span class="pastilla" 
+                     [class.yape]="v.metodo_pago === 'Yape'" 
+                     [class.plin]="v.metodo_pago === 'Plin'" 
+                     [class.granate]="v.metodo_pago === 'Fiado'" 
+                     [class.crema]="v.metodo_pago === 'Efectivo' || v.metodo_pago === 'Tarjeta'">{{ v.metodo_pago }}
+                </span>
               <span class="v-monto dinero">{{ soles(v.monto_total) }}</span>
               @if (v.estado_venta === 'Anulada') { <span class="pastilla rojo">Anulada</span> }
             </button>
