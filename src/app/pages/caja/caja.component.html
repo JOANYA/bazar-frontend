@@ -165,7 +165,8 @@
       <div class="segmento">
         <button type="button" [class.activo]="filtroMetodo() === ''" (click)="filtroMetodo.set('')">Todas</button>
         <button type="button" [class.activo]="filtroMetodo() === 'Efectivo'" (click)="filtroMetodo.set('Efectivo')">Efectivo</button>
-        <button type="button" [class.activo]="filtroMetodo() === 'Yape/Plin'" (click)="filtroMetodo.set('Yape/Plin')">Yape / Plin</button>
+        <button type="button" [class.activo]="filtroMetodo() === 'Yape'" (click)="filtroMetodo.set('Yape')">Yape</button>
+        <button type="button" [class.activo]="filtroMetodo() === 'Plin'" (click)="filtroMetodo.set('Plin')">Plin</button>
         <button type="button" [class.activo]="filtroMetodo() === 'Fiado'" (click)="filtroMetodo.set('Fiado')">Fiado</button>
         <button type="button" [class.activo]="filtroMetodo() === 'Tarjeta'" (click)="filtroMetodo.set('Tarjeta')">Tarjeta</button>
       </div>

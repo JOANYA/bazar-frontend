@@ -1,7 +1,7 @@
 /** Modelos que reflejan exactamente lo que responde el backend del bazar. */
 
 export type NivelStock = 'verde' | 'amarillo' | 'rojo';
-export type MetodoPago = 'Efectivo' | 'Yape/Plin' | 'Fiado' | 'Tarjeta';
+export type MetodoPago = 'Efectivo' | 'Yape' | 'Plin'| 'Fiado' | 'Tarjeta';
 export type MetodoCobro = 'Efectivo' | 'Yape' | 'Plin'|'Tarjeta';
 export type EstadoProducto = 'Disponible' | 'Agotado' | 'Inactivo';
 export type Rol = 'tendera' | 'admin';
